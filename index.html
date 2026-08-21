@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سجل نواقص الأدوية</title>
+<meta name="theme-color" content="#1F3B33">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="نواقص الأدوية">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<style>
+  :root{
+    --ink:#1B2E28;
+    --paper:#FBF8F2;
+    --paper-dim:#F1EBDD;
+    --green:#1F3B33;
+    --green-soft:#2F5548;
+    --amber:#E0972D;
+    --red:#B8443C;
+    --line: rgba(27,46,40,0.14);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    min-height:100vh;
+  }
+  header{
+    background:var(--green);
+    color:var(--paper);
+    padding:22px 18px 26px;
+    position:relative;
+    overflow:hidden;
+  }
+  header::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:repeating-linear-gradient(135deg, rgba(255,255,255,0.03) 0 2px, transparent 2px 14px);
+    pointer-events:none;
+  }
+  h1{
+    margin:0;
+    font-size:22px;
+    font-weight:700;
+    letter-spacing:0.2px;
+  }
+  .sub{
+    margin-top:6px;
+    font-size:13px;
+    color:rgba(251,248,242,0.72);
+  }
+  .stats{
+    display:flex;
+    gap:10px;
+    margin-top:16px;
+  }
+  .stat{
+    background:rgba(251,248,242,0.08);
+    border:1px solid rgba(251,248,242,0.18);
+    border-radius:10px;
+    padding:8px 12px;
+    flex:1;
+    text-align:center;
+  }
+  .stat b{
+    display:block;
+    font-size:19px;
+    font-family: "Courier New", monospace;
+  }
+  .stat span{
+    font-size:11px;
+    color:rgba(251,248,242,0.65);
+  }
+
+  main{
+    max-width:640px;
+    margin:0 auto;
+    padding:16px;
+  }
+
+  form{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px;
+    margin-bottom:18px;
+    box-shadow:0 1px 0 rgba(27,46,40,0.04);
+  }
+  .row{
+    display:flex;
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .field{flex:1;}
+  label{
+    display:block;
+    font-size:11.5px;
+    color:var(--green-soft);
+    margin-bottom:4px;
+    font-weight:600;
+  }
+  input[type=text], input[type=number], textarea{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:9px 10px;
+    font-size:14px;
+    font-family:inherit;
+    background:#fff;
+    color:var(--ink);
+  }
+  textarea{resize:vertical;min-height:36px;}
+  input:focus, textarea:focus, select:focus, button:focus-visible{
+    outline:2px solid var(--amber);
+    outline-offset:1px;
+  }
+
+  .priority-group{display:flex;gap:6px;}
+  .priority-btn{
+    flex:1;
+    padding:8px 6px;
+    border-radius:8px;
+    border:1px solid var(--line);
+    background:#fff;
+    font-size:13px;
+    cursor:pointer;
+    color:var(--ink);
+  }
+  .priority-btn[data-active="true"][data-level="عاجل"]{
+    background:var(--red); color:#fff; border-color:var(--red);
+  }
+  .priority-btn[data-active="true"][data-level="قريبًا"]{
+    background:var(--amber); color:#fff; border-color:var(--amber);
+  }
+  .priority-btn[data-active="true"][data-level="عادي"]{
+    background:var(--green-soft); color:#fff; border-color:var(--green-soft);
+  }
+
+  .add-btn{
+    width:100%;
+    margin-top:10px;
+    background:var(--green);
+    color:var(--paper);
+    border:none;
+    border-radius:8px;
+    padding:11px;
+    font-size:14.5px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .add-btn:active{background:var(--green-soft);}
+
+  .filters{
+    display:flex;
+    gap:6px;
+    margin-bottom:12px;
+  }
+  .filter-btn{
+    padding:6px 12px;
+    border-radius:20px;
+    border:1px solid var(--line);
+    background:#fff;
+    font-size:12.5px;
+    cursor:pointer;
+    color:var(--green-soft);
+  }
+  .filter-btn[data-active="true"]{
+    background:var(--ink);
+    color:var(--paper);
+    border-color:var(--ink);
+  }
+
+  .ticket{
+    display:flex;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:10px;
+    margin-bottom:10px;
+    overflow:hidden;
+    position:relative;
+  }
+  .ticket.resolved{opacity:0.55;}
+  .stripe{
+    width:6px;
+    flex-shrink:0;
+  }
+  .stripe.عاجل{background:var(--red);}
+  .stripe.قريبًا{background:var(--amber);}
+  .stripe.عادي{background:var(--green-soft);}
+
+  .ticket-body{
+    padding:10px 12px;
+    flex:1;
+  }
+  .ticket-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:8px;
+  }
+  .med-name{
+    font-size:15.5px;
+    font-weight:700;
+  }
+  .med-name.resolved{text-decoration:line-through;}
+  .qty{
+    font-family:"Courier New", monospace;
+    font-size:13px;
+    color:var(--green-soft);
+    white-space:nowrap;
+  }
+  .meta-row{
+    display:flex;
+    justify-content:space-between;
+    margin-top:4px;
+    font-size:11.5px;
+    color:#8a8378;
+  }
+  .contact-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:6px;
+    font-size:12px;
+    color:var(--green-soft);
+  }
+  .contact-row a{
+    color:var(--green);
+    text-decoration:none;
+    font-weight:600;
+  }
+  .contact-row .emp{
+    margin-right:auto;
+    color:#a39c8e;
+    font-size:11.5px;
+  }
+  .notes{
+    margin-top:5px;
+    font-size:12.5px;
+    color:#5a544a;
+  }
+  .actions{
+    display:flex;
+    gap:6px;
+    margin-top:8px;
+  }
+  .actions button{
+    border:1px solid var(--line);
+    background:var(--paper-dim);
+    border-radius:6px;
+    padding:5px 10px;
+    font-size:12px;
+    cursor:pointer;
+    color:var(--ink);
+  }
+  .actions button.resolve-btn{
+    background:var(--green);
+    color:var(--paper);
+    border-color:var(--green);
+  }
+  .actions button.delete-btn{
+    color:var(--red);
+  }
+
+  .empty{
+    text-align:center;
+    padding:40px 20px;
+    color:#a39c8e;
+  }
+  .empty svg{margin-bottom:10px;opacity:0.5;}
+
+  .loading{
+    text-align:center;
+    padding:30px;
+    color:#a39c8e;
+    font-size:13px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>سجل نواقص الأدوية</h1>
+  <div class="sub">دوّن كل دواء ناقص، رتّبه حسب الأولوية، وتابع حالته حتى يتوفر</div>
+  <div class="stats">
+    <div class="stat"><b id="statPending">–</b><span>قيد الانتظار</span></div>
+    <div class="stat"><b id="statUrgent">–</b><span>عاجل</span></div>
+    <div class="stat"><b id="statResolved">–</b><span>تم التوفير</span></div>
+  </div>
+</header>
+
+<main>
+  <form id="addForm">
+    <div class="row">
+      <div class="field">
+        <label for="medName">اسم الدواء</label>
+        <input type="text" id="medName" placeholder="مثال: أوجمنتين 1 جم" required>
+      </div>
+      <div class="field" style="max-width:110px;">
+        <label for="medQty">الكمية</label>
+        <input type="number" id="medQty" min="1" placeholder="عدد العلب">
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom:8px;">
+      <label>الأولوية</label>
+      <div class="priority-group" id="priorityGroup">
+        <button type="button" class="priority-btn" data-level="عاجل">عاجل</button>
+        <button type="button" class="priority-btn" data-level="قريبًا">قريبًا</button>
+        <button type="button" class="priority-btn" data-level="عادي" data-active="true">عادي</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="empName">اسم الموظف</label>
+        <input type="text" id="empName" placeholder="اسمك">
+      </div>
+      <div class="field">
+        <label for="custName">اسم العميل/ة</label>
+        <input type="text" id="custName" placeholder="اسم العميل">
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom:8px;">
+      <label for="custPhone">رقم الهاتف للتواصل</label>
+      <input type="text" id="custPhone" placeholder="01xxxxxxxxx" inputmode="tel">
+    </div>
+
+    <div class="field">
+      <label for="medNotes">ملاحظات (اختياري)</label>
+      <textarea id="medNotes" placeholder="مورد بديل، سبب النقص، ..."></textarea>
+    </div>
+
+    <button type="submit" class="add-btn">إضافة إلى السجل</button>
+  </form>
+
+  <div class="filters">
+    <button class="filter-btn" data-active="true" data-filter="all">الكل</button>
+    <button class="filter-btn" data-filter="pending">قيد الانتظار</button>
+    <button class="filter-btn" data-filter="urgent">عاجل</button>
+    <button class="filter-btn" data-filter="resolved">تم التوفير</button>
+  </div>
+
+  <div id="list">
+    <div class="loading">جارٍ تحميل السجل…</div>
+  </div>
+</main>
+
+<script>
+const STORAGE_KEY = 'shortages-log';
+let items = [];
+let currentFilter = 'all';
+let selectedPriority = 'عادي';
+
+const listEl = document.getElementById('list');
+const form = document.getElementById('addForm');
+const priorityGroup = document.getElementById('priorityGroup');
+
+priorityGroup.addEventListener('click', (e) => {
+  const btn = e.target.closest('.priority-btn');
+  if(!btn) return;
+  [...priorityGroup.children].forEach(b => b.removeAttribute('data-active'));
+  btn.setAttribute('data-active','true');
+  selectedPriority = btn.dataset.level;
+});
+
+document.querySelectorAll('.filter-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.filter-btn').forEach(b=>b.removeAttribute('data-active'));
+    btn.setAttribute('data-active','true');
+    currentFilter = btn.dataset.filter;
+    render();
+  });
+});
+
+async function loadItems(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    items = res ? JSON.parse(res.value) : [];
+  }catch(e){
+    items = [];
+  }
+  render();
+}
+
+async function saveItems(){
+  try{
+    await window.storage.set(STORAGE_KEY, JSON.stringify(items), false);
+  }catch(e){
+    console.error('تعذر الحفظ', e);
+  }
+}
+
+function fmtDate(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString('ar-EG', {day:'numeric', month:'short'});
+}
+
+function render(){
+  document.getElementById('statPending').textContent = items.filter(i=>!i.resolved).length;
+  document.getElementById('statUrgent').textContent = items.filter(i=>!i.resolved && i.priority==='عاجل').length;
+  document.getElementById('statResolved').textContent = items.filter(i=>i.resolved).length;
+
+  let visible = items;
+  if(currentFilter==='pending') visible = items.filter(i=>!i.resolved);
+  if(currentFilter==='urgent') visible = items.filter(i=>!i.resolved && i.priority==='عاجل');
+  if(currentFilter==='resolved') visible = items.filter(i=>i.resolved);
+
+  visible = [...visible].sort((a,b)=>{
+    if(a.resolved !== b.resolved) return a.resolved ? 1 : -1;
+    const order = {'عاجل':0,'قريبًا':1,'عادي':2};
+    return order[a.priority] - order[b.priority];
+  });
+
+  if(visible.length === 0){
+    listEl.innerHTML = `<div class="empty">
+      <div>لا توجد عناصر هنا حاليًا</div>
+      <div style="font-size:12px;margin-top:4px;">أضف دواءً ناقصًا من الأعلى ليظهر في السجل</div>
+    </div>`;
+    return;
+  }
+
+  listEl.innerHTML = visible.map(item => `
+    <div class="ticket ${item.resolved?'resolved':''}">
+      <div class="stripe ${item.priority}"></div>
+      <div class="ticket-body">
+        <div class="ticket-top">
+          <div class="med-name ${item.resolved?'resolved':''}">${escapeHtml(item.name)}</div>
+          ${item.qty ? `<div class="qty">${item.qty} علبة</div>` : ''}
+        </div>
+        <div class="meta-row">
+          <span>${item.priority}</span>
+          <span>أُضيف ${fmtDate(item.createdAt)}</span>
+        </div>
+        ${(item.employee || item.customer || item.phone) ? `<div class="contact-row">
+          ${item.customer ? `<span>👤 ${escapeHtml(item.customer)}</span>` : ''}
+          ${item.phone ? `<a href="tel:${escapeHtml(item.phone)}">📞 ${escapeHtml(item.phone)}</a>` : ''}
+          ${item.employee ? `<span class="emp">بواسطة ${escapeHtml(item.employee)}</span>` : ''}
+        </div>` : ''}
+        ${item.notes ? `<div class="notes">${escapeHtml(item.notes)}</div>` : ''}
+        <div class="actions">
+          ${!item.resolved ? `<button class="resolve-btn" data-action="resolve" data-id="${item.id}">تم التوفير</button>` : `<button data-action="reopen" data-id="${item.id}">إعادة فتح</button>`}
+          <button class="delete-btn" data-action="delete" data-id="${item.id}">حذف</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+listEl.addEventListener('click', async (e)=>{
+  const btn = e.target.closest('button[data-action]');
+  if(!btn) return;
+  const id = btn.dataset.id;
+  const action = btn.dataset.action;
+  const item = items.find(i=>i.id===id);
+  if(!item) return;
+
+  if(action==='resolve') item.resolved = true;
+  if(action==='reopen') item.resolved = false;
+  if(action==='delete'){
+    if(!confirm(`حذف "${item.name}" من السجل؟`)) return;
+    items = items.filter(i=>i.id!==id);
+  }
+  await saveItems();
+  render();
+});
+
+form.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const name = document.getElementById('medName').value.trim();
+  if(!name) return;
+  const qty = document.getElementById('medQty').value;
+  const notes = document.getElementById('medNotes').value.trim();
+  const employee = document.getElementById('empName').value.trim();
+  const customer = document.getElementById('custName').value.trim();
+  const phone = document.getElementById('custPhone').value.trim();
+
+  items.unshift({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    name,
+    qty: qty ? Number(qty) : null,
+    priority: selectedPriority,
+    notes,
+    employee,
+    customer,
+    phone,
+    resolved: false,
+    createdAt: new Date().toISOString()
+  });
+
+  await saveItems();
+  form.reset();
+  [...priorityGroup.children].forEach(b=>b.removeAttribute('data-active'));
+  priorityGroup.children[2].setAttribute('data-active','true');
+  selectedPriority = 'عادي';
+  render();
+});
+
+loadItems();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
